@@ -1,0 +1,27 @@
+# Virtual environment
+attendance_env/
+
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# macOS
+.DS_Store
+
+# Generated files (can be re-created by running the pipeline)
+face_encodings.pkl
+rfid_entry_log.csv
+attendance.csv
+face_recognition_results.csv
+
+# Temporary / test folders
+xyz/
+xyzz/
+
+# IDE
+.vscode/
+.idea/
+
+# Empty placeholder
+python.py
