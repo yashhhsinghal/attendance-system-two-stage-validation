@@ -16,6 +16,8 @@ Usage:
 import os
 import csv
 import sqlite3
+import hashlib
+import time
 from datetime import datetime, date
 from functools import wraps
 
@@ -26,11 +28,14 @@ from flask import (
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = "attendance-secret-key-change-in-production"
+
+# Secret key from environment variable (never hardcoded in production)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 
 # Session / cookie settings
+is_production = os.environ.get("FLASK_ENV") == "production" or os.environ.get("RENDER")
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_SECURE"] = is_production  # True on HTTPS (Render)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_NAME"] = "attendance_session"
 
@@ -38,9 +43,16 @@ DATABASE = "attendance.db"
 DATASET_DIR = "Dataset"
 ATTENDANCE_CSV = "attendance.csv"
 
-# Default teacher credentials (change these!)
-TEACHER_USERNAME = "admin"
-TEACHER_PASSWORD = "admin123"
+# Credentials from environment variables (with fallback for local dev)
+TEACHER_USERNAME = os.environ.get("TEACHER_USERNAME", "admin")
+TEACHER_PASSWORD_HASH = hashlib.sha256(
+    os.environ.get("TEACHER_PASSWORD", "admin123").encode()
+).hexdigest()
+
+# Brute-force protection
+_login_attempts = {}  # {ip: (count, last_attempt_time)}
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_SECONDS = 300  # 5-minute lockout
 # ──────────────────────────────────────────────────────────────────────────────
 
 
@@ -183,15 +195,35 @@ def login_required(f):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        ip = request.remote_addr
+
+        # ── Brute-force check ─────────────────────────────────────────────
+        if ip in _login_attempts:
+            count, last_time = _login_attempts[ip]
+            if count >= MAX_LOGIN_ATTEMPTS and (time.time() - last_time) < LOCKOUT_SECONDS:
+                remaining = int(LOCKOUT_SECONDS - (time.time() - last_time))
+                flash(f"Too many failed attempts. Try again in {remaining} seconds.", "danger")
+                return render_template("login.html")
+
         username = request.form.get("username", "")
         password = request.form.get("password", "")
-        if username == TEACHER_USERNAME and password == TEACHER_PASSWORD:
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+
+        if username == TEACHER_USERNAME and password_hash == TEACHER_PASSWORD_HASH:
             session["logged_in"] = True
             session["username"] = username
+            _login_attempts.pop(ip, None)  # Reset on success
             flash("Logged in successfully!", "success")
             return redirect(url_for("dashboard"))
         else:
-            flash("Invalid credentials.", "danger")
+            # Track failed attempts
+            count = _login_attempts.get(ip, (0, 0))[0] + 1
+            _login_attempts[ip] = (count, time.time())
+            remaining = MAX_LOGIN_ATTEMPTS - count
+            if remaining > 0:
+                flash(f"Invalid credentials. {remaining} attempt(s) remaining.", "danger")
+            else:
+                flash(f"Account locked for {LOCKOUT_SECONDS // 60} minutes.", "danger")
     return render_template("login.html")
 
 
