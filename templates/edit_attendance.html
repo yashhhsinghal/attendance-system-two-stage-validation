@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Edit Attendance — Attendance System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Edit Attendance</h1>
+    <p class="subtitle">Manually add or modify a student's attendance record</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Manual Attendance Entry</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_attendance') }}" class="edit-form">
+            <div class="form-group">
+                <label for="student_id">Student</label>
+                <select id="student_id" name="student_id" required>
+                    <option value="">— Select Student —</option>
+                    {% for s in students %}
+                    <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" value="{{ today }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" required>
+                    <option value="Present">✅ Present</option>
+                    <option value="Absent">❌ Absent</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="reason">Reason for Change</label>
+                <textarea id="reason" name="reason" rows="3"
+                          placeholder="e.g. Student attended a college event, Medical leave approved, System failed to recognize..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Attendance</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card info-card">
+    <div class="card-body">
+        <h3>ℹ️ When to use manual edits</h3>
+        <ul>
+            <li><strong>System recognition failure</strong> — The face recognition system didn't detect a student who was present</li>
+            <li><strong>Events / Field trips</strong> — Student was at a college event and should be marked present</li>
+            <li><strong>Late arrival</strong> — Student arrived after the classroom image was taken</li>
+            <li><strong>RFID malfunction</strong> — RFID reader didn't register the student's swipe</li>
+            <li><strong>Correction</strong> — Fix any incorrect attendance record</li>
+        </ul>
+        <p class="text-muted">All manual changes are logged in the audit trail for transparency.</p>
+    </div>
+</div>
+{% endblock %}

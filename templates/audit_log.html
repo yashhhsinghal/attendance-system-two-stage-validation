@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — Attendance System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Audit Log</h1>
+    <p class="subtitle">All manual attendance changes are recorded here for transparency</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Manual Changes History</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Date</th>
+                <th>Old Status</th>
+                <th>New Status</th>
+                <th>Reason</th>
+                <th>Changed By</th>
+                <th>Changed At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><strong>{{ log['student_name'] }}</strong></td>
+                <td>{{ log['date'] }}</td>
+                <td>
+                    {% if log['old_status'] == 'Present' %}
+                        <span class="badge badge-present">Present</span>
+                    {% elif log['old_status'] == 'Absent' %}
+                        <span class="badge badge-absent">Absent</span>
+                    {% else %}
+                        <span class="badge badge-none">{{ log['old_status'] }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if log['new_status'] == 'Present' %}
+                        <span class="badge badge-present">Present</span>
+                    {% else %}
+                        <span class="badge badge-absent">Absent</span>
+                    {% endif %}
+                </td>
+                <td>{{ log['reason'] or '—' }}</td>
+                <td>{{ log['changed_by'] or 'teacher' }}</td>
+                <td>{{ log['changed_at'][:16] if log['changed_at'] else '—' }}</td>
+            </tr>
+            {% endfor %}
+            {% if not logs %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    No manual changes have been made yet.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

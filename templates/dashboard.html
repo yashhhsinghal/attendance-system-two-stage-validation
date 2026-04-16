@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Attendance System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="subtitle">{{ today }}</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="stats-grid">
+    <div class="stat-card stat-total">
+        <div class="stat-number">{{ total }}</div>
+        <div class="stat-label">Total Students</div>
+    </div>
+    <div class="stat-card stat-present">
+        <div class="stat-number">{{ present }}</div>
+        <div class="stat-label">Present Today</div>
+    </div>
+    <div class="stat-card stat-absent">
+        <div class="stat-number">{{ absent }}</div>
+        <div class="stat-label">Absent Today</div>
+    </div>
+    <div class="stat-card stat-rate">
+        <div class="stat-number">{{ (present / total * 100) | round(1) if total > 0 else 0 }}%</div>
+        <div class="stat-label">Attendance Rate</div>
+    </div>
+</div>
+
+<!-- Today's Attendance -->
+<div class="card">
+    <div class="card-header">
+        <h2>Today's Attendance</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Status</th>
+                <th>RFID</th>
+                <th>Face Detections</th>
+                <th>Source</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in today_records %}
+            <tr>
+                <td><strong>{{ record['name'] }}</strong></td>
+                <td>
+                    {% if record['status'] == 'Present' %}
+                        <span class="badge badge-present">✅ Present</span>
+                    {% elif record['status'] == 'Absent' %}
+                        <span class="badge badge-absent">❌ Absent</span>
+                    {% else %}
+                        <span class="badge badge-none">— No Record</span>
+                    {% endif %}
+                </td>
+                <td>{{ record['rfid_swiped'] or '—' }}</td>
+                <td>{{ record['face_detections'] if record['face_detections'] is not none else '—' }}</td>
+                <td>
+                    {% if record['source'] == 'manual' %}
+                        <span class="badge badge-manual">✏️ Manual</span>
+                    {% elif record['source'] == 'system' %}
+                        <span class="badge badge-system">🤖 System</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Overall Stats -->
+<div class="card">
+    <div class="card-header">
+        <h2>Student Attendance Overview</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Days Recorded</th>
+                <th>Days Present</th>
+                <th>Percentage</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in student_stats %}
+            <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td>{{ s.total_days }}</td>
+                <td>{{ s.present_days }}</td>
+                <td>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar {% if s.percentage >= 75 %}bar-good{% elif s.percentage >= 50 %}bar-warn{% else %}bar-danger{% endif %}"
+                             style="width: {{ s.percentage }}%"></div>
+                        <span class="progress-text">{{ s.percentage }}%</span>
+                    </div>
+                </td>
+                <td>
+                    <a href="{{ url_for('student_detail', student_id=s.id) }}" class="btn btn-sm">View Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

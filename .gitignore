@@ -14,6 +14,7 @@ face_encodings.pkl
 rfid_entry_log.csv
 attendance.csv
 face_recognition_results.csv
+attendance.db
 
 # Temporary / test folders
 xyz/
